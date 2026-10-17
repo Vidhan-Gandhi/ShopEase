@@ -52,7 +52,21 @@ export function CartProvider({ children }) {
         if (!local.length) view = EMPTY_CART
         else {
           view = await cartApi.validate(local)
-          const synced = view.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
+          // Remember product names locally so a later-deleted product can still be named in the notice.
+          const names = new Map(local.filter((i) => i.name).map((i) => [i.productId, i.name]))
+          view.items.forEach((i) => names.set(i.productId, i.name))
+          if (view.unavailable && view.unavailable.length) {
+            const notices = [...(view.notices || [])]
+            view.unavailable = view.unavailable.map((u) => {
+              const known = names.get(u.productId)
+              if (u.reason !== 'deleted' || !known || u.name === known) return u
+              const idx = notices.indexOf(`${u.name} is no longer available`)
+              if (idx >= 0) notices[idx] = `${known} is no longer available`
+              return { ...u, name: known }
+            })
+            view.notices = notices
+          }
+          const synced = view.items.map((i) => ({ productId: i.productId, quantity: i.quantity, name: i.name }))
           writeGuestCart(synced)
           if (seq === loadSeq.current) setGuestItems(synced)
         }
@@ -108,7 +122,7 @@ export function CartProvider({ children }) {
       if (total > product.stock) throw new ApiError(400, `Only ${product.stock} available`)
       const next = existing
         ? local.map((i) => (i.productId === product.id ? { ...i, quantity: total } : i))
-        : [...local, { productId: product.id, quantity }]
+        : [...local, { productId: product.id, quantity, name: product.name }]
       writeGuestCart(next)
       setGuestItems(next)
       return next

@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [status, setStatus] = useState(getToken() ? 'loading' : 'ready') // loading | ready | error
   const [bootError, setBootError] = useState(null)
+  const [sessionNotice, setSessionNotice] = useState(null)
   const initialCart = useRef(null)
 
   const bootstrap = useCallback(async () => {
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
         setToken(null)
         setUser(null)
         setStatus('ready')
+        setSessionNotice('Your session has expired. Please log in again')
       } else {
         setBootError(err)
         setStatus('error')
@@ -57,6 +59,7 @@ export function AuthProvider({ children }) {
   /** After a successful login/signup: store token, merge the guest cart (customers only), then set the user. */
   const completeAuth = useCallback(async ({ token, user: u }) => {
     setToken(token)
+    setSessionNotice(null)
     initialCart.current = null
     if (u.role === 'customer') {
       const items = readGuestCart()
@@ -93,8 +96,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, setUser, status, bootError, bootstrap, login, signup, logout, consumeInitialCart }),
-    [user, status, bootError, bootstrap, login, signup, logout, consumeInitialCart],
+    () => ({ user, setUser, status, bootError, sessionNotice, bootstrap, login, signup, logout, consumeInitialCart }),
+    [user, status, bootError, sessionNotice, bootstrap, login, signup, logout, consumeInitialCart],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

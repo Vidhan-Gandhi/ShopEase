@@ -27,11 +27,11 @@ export function AdminBlocked() {
 
 /** role: 'customer' (customers only), 'admin' (admin only) or undefined (any logged-in user). */
 export default function Guard({ role, children }) {
-  const { user, status, bootError, bootstrap } = useAuth()
+  const { user, status, bootError, bootstrap, sessionNotice } = useAuth()
   const loc = useLocation()
   if (status === 'loading') return <Loading testid="auth-loading" />
   if (status === 'error') return <ErrorState testid="auth-error" error={bootError} onRetry={bootstrap} />
-  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />
+  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search, message: sessionNotice || undefined }} />
   if (role === 'admin' && user.role !== 'admin') return <NotAuthorised />
   if (role === 'customer' && user.role === 'admin') return <AdminBlocked />
   return children
