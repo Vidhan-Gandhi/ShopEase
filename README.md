@@ -4,7 +4,8 @@ ShopEase is a full-stack e-commerce web application for a single online store (p
 
 ## Features
 
-- Sign up, log in (JWT), profile, password change, multiple delivery addresses with a default
+- Sign up with email verification, log in (JWT), profile, password change, multiple delivery addresses with a default
+- Email verification: sign-up creates an unverified account and emails a single-use link (token stored hashed, valid 24 hours); unverified customers cannot log in; "Resend verification email" is limited to 3 per hour per address (429 with Retry-After); sign-up with disposable email domains (e.g. mailinator.com) is blocked. Note: sign-up no longer returns a token or logs the user in; the user verifies by email and then logs in. Seeded users and admins are unaffected.
 - Product catalogue: featured products, categories, search, price and category filters, sorting, pagination (12 per page)
 - Guest cart in the browser, merged into the server cart on login; stock-aware cart with automatic corrections and notices
 - Checkout: address, review, payment (COD or mock online payment), re-check of price and stock before the order is placed
@@ -58,9 +59,14 @@ npm install
 
 Each part ships a `.env.example`. Copy it to `.env` (git-ignored) and adjust.
 
-- `backend/.env.example`: `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CORS_ORIGIN`, login rate-limit settings (`LOGIN_RATE_LIMIT_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX`), `TRUST_PROXY`, `GLOBAL_RATE_LIMIT_MAX`
+- `backend/.env.example`: email settings `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `APP_URL` (all empty by default; with no `SMTP_HOST` emails are only logged, not sent; `APP_URL` is the frontend URL used in the link, default `http://localhost:5173`), `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CORS_ORIGIN`, login rate-limit settings (`LOGIN_RATE_LIMIT_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX`), `TRUST_PROXY`, `GLOBAL_RATE_LIMIT_MAX`
 - `frontend/.env.example`: `VITE_API_URL` (default `http://localhost:5000/api`)
 - `tests/.env.example`: test settings
+- Tests: `E2E_API_PORT` and `E2E_WEB_PORT` set the ports the E2E run uses for its own backend and frontend (defaults 5000 and 5173)
+
+### Test-mode email capture
+
+When `NODE_ENV=test` no email is sent; messages are kept in memory. `GET /api/test/emails?to=<email>` returns `items[]` with `link` and `token`; `DELETE /api/test/emails` clears them and resets resend counters. In any other environment both endpoints return 404.
 
 ## Seed credentials (development only)
 
@@ -84,9 +90,9 @@ npm run test:api
 npm run test:e2e
 ```
 
-The tests start their own backend (in-memory MongoDB) and frontend, so ports 5000 and 5173 must be free.
+The tests start their own backend (in-memory MongoDB) and frontend, so ports 5000 and 5173 must be free (or set `E2E_API_PORT` / `E2E_WEB_PORT`).
 
-Final result: 285 of 285 tests passing (100%), 0 P0 failures (run 2 after one fix round; run 1 was 283/285).
+Final result: 340 of 340 tests passing (100%), 0 P0 failures (after ONC-001, run 4; the original release was 285/285).
 
 ## Project structure
 
@@ -105,4 +111,10 @@ ShopEase/
 - The online payment is a mock page; no real payment provider is integrated.
 - Admin product list supports name search only (no category or status filters).
 - Sign-up is not rate limited.
+- Resend-verification counters are in memory (reset on restart). The disposable-domain list is a static list of about 80 domains, not exhaustive.
+- Real SMTP delivery was not tested (no credentials); emails are verified through test-mode capture.
 - Seed order dates are relative to when the seed runs; re-run `npm run seed` to reset data.
+
+## Changelog
+
+- ONC-001 — 2026-10-18: Added email verification (hashed single-use 24h token, verification page, login blocked until verified), resend limit of 3 per hour, disposable-domain block, Nodemailer/SMTP config, test-mode email capture. Sign-up no longer logs the user in. Tests: 340/340 passing.
