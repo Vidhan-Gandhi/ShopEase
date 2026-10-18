@@ -1,10 +1,10 @@
 // Shared helpers for Playwright tests. UI elements are selected ONLY by data-testid.
 const base = require('@playwright/test');
 
-const API = process.env.E2E_API_URL || 'http://localhost:5000/api';
+const API = process.env.E2E_API_URL || `http://localhost:${process.env.E2E_API_PORT || '5000'}/api`;
 const TOKEN_KEY = 'shopease_token';
 const GUEST_CART_KEY = 'shopease_guest_cart';
-const IMG = 'http://localhost:5173/favicon.svg'; // served by the Vite dev server, so images really load
+const IMG = `http://localhost:${process.env.E2E_WEB_PORT || '5173'}/favicon.svg`; // served by the Vite dev server, so images really load
 
 let ipSeq = 10 + Math.floor(Math.random() * 100);
 const freshIp = () => {
@@ -49,12 +49,32 @@ async function adminToken() {
   if (!adminCache) adminCache = must(await api('POST', '/auth/login', { body: { email: 'admin@shopease.com', password: 'Admin@123' } }), 200, 'admin login').token;
   return adminCache;
 }
+/** ONC-001: raw token of the latest verification email to `email` (NODE_ENV=test outbox). */
+async function latestToken(email) {
+  const r = await api('GET', '/test/emails?to=' + encodeURIComponent(email));
+  const items = (r.body && r.body.items) || [];
+  if (!items.length) throw new Error('no verification email captured for ' + email);
+  return items[items.length - 1].token;
+}
+/** Verifies the account through its captured email. */
+const verifyAccount = async (email) => must(await api('POST', '/auth/verify-email', { body: { token: await latestToken(email) } }), 200, 'verify-email');
+/** Signs up, verifies by email and logs in through the API. */
 async function signup(o = {}) {
   const email = o.email || uniqueEmail();
   const password = o.password || 'Shop1234';
   const name = o.name || 'E2E Customer';
-  const b = must(await api('POST', '/auth/signup', { body: { name, email, password } }), 201, 'signup');
+  must(await api('POST', '/auth/signup', { body: { name, email, password } }), 201, 'signup');
+  await verifyAccount(email);
+  const b = must(await api('POST', '/auth/login', { body: { email, password } }), 200, 'login after verify');
   return { token: b.token, user: b.user, email, password, name };
+}
+/** Signs up only; the account stays unverified. */
+async function signupUnverified(o = {}) {
+  const email = o.email || uniqueEmail('unv');
+  const password = o.password || 'Shop1234';
+  const name = o.name || 'E2E Unverified';
+  must(await api('POST', '/auth/signup', { body: { name, email, password } }), 201, 'signup');
+  return { email, password, name };
 }
 const addressBody = (o = {}) => ({ name: 'Test User', phone: '9876543210', addressLine: '12 MG Road', city: 'Pune', state: 'Maharashtra', pincode: '411001', ...o });
 async function addAddress(token, o = {}) {
@@ -138,7 +158,7 @@ async function toPaymentStep(page, { method } = {}) {
 }
 
 module.exports = {
-  test, expect, API, TOKEN_KEY, GUEST_CART_KEY, IMG, freshIp, uid, uniqueEmail, api, must, adminToken, signup, addAddress, addressBody,
+  test, expect, API, TOKEN_KEY, GUEST_CART_KEY, IMG, freshIp, uid, uniqueEmail, api, must, adminToken, signup, signupUnverified, latestToken, verifyAccount, addAddress, addressBody,
   customerWithAddress, qaCategory, createCategory, createProduct, updateProduct, deleteProduct, getProduct, addToServerCart, placeOrder,
   setStatus, myOrders, serverCart, money, parseMoney, todayIST, setSession, setGuestCart, uiLogin, uiLoginAdmin, toPaymentStep,
 };

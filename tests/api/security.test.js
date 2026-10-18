@@ -86,7 +86,10 @@ describe('FR-006 route protection', () => {
     }
     const res = await h.post('/api/auth/signup', { body: { name: 'Sneaky', email: h.uniqueEmail(), password: 'Shop1234', role: 'admin', isAdmin: true, admin: true } });
     expect(res.body.user.role).toBe('customer');
-    expect((await h.get('/api/admin/dashboard', { token: res.body.token })).status).toBe(403);
+    expect(res.body.token).toBeUndefined();
+    await h.verifyAccount(res.body.user.email);
+    const lg = await h.post('/api/auth/login', { body: { email: res.body.user.email, password: 'Shop1234' } });
+    expect((await h.get('/api/admin/dashboard', { token: lg.body.token })).status).toBe(403);
     for (const url of ['/api/auth/admin-signup', '/api/auth/signup/admin', '/api/admin/signup', '/api/admin/users']) {
       const r = await h.post(url, { body: { name: 'Sneaky', email: h.uniqueEmail(), password: 'Shop1234' } });
       expect([401, 404]).toContain(r.status);
@@ -228,7 +231,7 @@ describe('NFR-003 / NFR-004 / NFR-005 security of inputs and secrets', () => {
     const signup = await h.post('/api/auth/signup', { body: { name: xss + ' Bob', email: h.uniqueEmail('xss'), password: 'Shop1234' } });
     expect([201, 400]).toContain(signup.status);
     expect(signup.headers['content-type']).toMatch(/application\/json/);
-    const token = signup.status === 201 ? signup.body.token : customer.token;
+    const token = customer.token; // changed by ONC-001: signup no longer returns a token
     const prof = await h.put('/api/profile', { token, body: { name: xss, phone: '' } });
     expect([200, 400]).toContain(prof.status);
     const addr = await h.post('/api/addresses', { token, body: h.addressBody({ addressLine: xss + ' lane', city: '<img src=x onerror=alert(1)>' }) });

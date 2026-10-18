@@ -47,13 +47,35 @@ async function adminToken() {
   return adminCache;
 }
 
+/** ONC-001: the captured verification email(s) for an address (NODE_ENV=test outbox, via the test endpoint). */
+async function emailsFor(email) {
+  const res = await get('/api/test/emails?to=' + encodeURIComponent(email));
+  if (res.status !== 200) throw new Error('emailsFor failed: ' + res.status + JSON.stringify(res.body));
+  return res.body.items;
+}
+/** Raw token from the most recent verification email sent to `email`. */
+async function latestToken(email) {
+  const items = await emailsFor(email);
+  if (!items.length) throw new Error('no verification email captured for ' + email);
+  return items[items.length - 1].token;
+}
+/** Verifies an account through its emailed link (ONC-001) and returns the verify response. */
+async function verifyAccount(email) {
+  return post('/api/auth/verify-email', { body: { token: await latestToken(email) } });
+}
+/** Signs up, verifies through the captured email, logs in; returns { token, user, email, password }. */
 async function signupCustomer(overrides = {}) {
   const email = overrides.email || uniqueEmail();
   const password = overrides.password || 'Shop1234';
   const res = await post('/api/auth/signup', { body: { name: overrides.name || 'QA Customer', email, password } });
   if (res.status !== 201) throw new Error('signup failed: ' + res.status + JSON.stringify(res.body));
-  return { token: res.body.token, user: res.body.user, email, password };
+  const v = await verifyAccount(email);
+  if (v.status !== 200) throw new Error('verify failed: ' + v.status + JSON.stringify(v.body));
+  const lg = await login(email, password);
+  return { token: lg.token, user: lg.user, email, password };
 }
+/** Signs up and returns the response only (account stays unverified). */
+const signupRaw = (name, email, password = 'Shop1234', extra = {}) => post('/api/auth/signup', { body: { name, email, password, ...extra } });
 
 const addressBody = (o = {}) => ({
   name: 'Test User', phone: '9876543210', addressLine: '12 MG Road', city: 'Pune', state: 'Maharashtra', pincode: '411001', ...o,
@@ -137,7 +159,7 @@ function hasSecretKey(v) {
 }
 
 module.exports = {
-  app, limiter, jwt, mongoose, get, post, put, patch, del, call, uid, uniqueEmail, SEED, login, adminToken, signupCustomer,
+  app, limiter, jwt, mongoose, get, post, put, patch, del, call, uid, uniqueEmail, SEED, login, adminToken, signupCustomer, signupRaw, emailsFor, latestToken, verifyAccount,
   addressBody, addAddress, createCategory, createProduct, updateProduct, deleteProduct, addToCart, placeOrderRaw,
   placeOrderFor, adminStatus, stockOf, todayIST, sleep, db, signToken, hasSecretKey, freshIp, qaCategoryId,
 };

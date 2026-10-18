@@ -175,13 +175,18 @@ test.describe('FR-016 / FR-017 merge and server cart (UI)', () => {
     await ctx.close();
   });
 
-  test('TC-248 signing up with a non-empty guest cart turns it into the new customer\'s server cart', async ({ page }) => {
+  test("TC-248 signing up with a non-empty guest cart turns it into the new customer's server cart at the first login after verification (changed by ONC-001)", async ({ page }) => {
     const A = await h.createProduct({ stock: 10, price: 220, name: 'Signup Merge ' + h.uid() });
     await h.setGuestCart(page, [[A, 2]], '/signup');
+    const email = h.uniqueEmail('shopper');
     await page.getByTestId('signup-name').fill('New Shopper');
-    await page.getByTestId('signup-email').fill(h.uniqueEmail('shopper'));
+    await page.getByTestId('signup-email').fill(email);
     await page.getByTestId('signup-password').fill('Shop1234');
     await page.getByTestId('signup-submit').click();
+    await expect(page.getByTestId('signup-verify-title')).toBeVisible();
+    await expect(page.getByTestId('header-user-name')).toHaveCount(0);
+    await h.verifyAccount(email);
+    await h.uiLogin(page, email, 'Shop1234');
     await expect(page.getByTestId('header-user-name')).toBeVisible();
     await expect(page.getByTestId('header-cart-count')).toContainText('2');
     const token = await page.evaluate((k) => localStorage.getItem(k), h.TOKEN_KEY);

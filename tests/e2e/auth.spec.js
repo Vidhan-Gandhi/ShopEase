@@ -13,12 +13,13 @@ async function fillSignup(page, { name, email, password }) {
 }
 
 test.describe('FR-001 sign up (UI)', () => {
-  test('TC-200 a guest signs up and lands on the home page logged in with their name in the header', async ({ page }) => {
-    await fillSignup(page, { name: 'Asha Rao', email: h.uniqueEmail('asha'), password: 'Shop1234' });
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('header-user-name')).toContainText('Asha Rao');
-    await expect(page.getByTestId('header-logout')).toBeVisible();
-    await expect(page.getByTestId('header-login')).toHaveCount(0);
+  test('TC-200 a guest signs up and sees "Check your email" with their address; they are NOT logged in until they verify (changed by ONC-001)', async ({ page }) => {
+    const email = h.uniqueEmail('asha');
+    await fillSignup(page, { name: 'Asha Rao', email, password: 'Shop1234' });
+    await expect(page.getByTestId('signup-verify-title')).toHaveText('Check your email');
+    await expect(page.getByTestId('signup-verify-email')).toHaveText(email);
+    await expect(page.getByTestId('header-user-name')).toHaveCount(0);
+    await expect(page.getByTestId('header-login')).toBeVisible();
   });
 
   test('TC-201 weak passwords show "Password must be at least 8 characters and contain a letter and a number" and no account is created', async ({ page }) => {

@@ -20,8 +20,8 @@ process.on('SIGINT', shutdown);
     ...process.env,
     MONGODB_URI: uri,
     JWT_SECRET: 'test_secret',
-    PORT: '5000',
-    CORS_ORIGIN: 'http://localhost:5173',
+    PORT: process.env.E2E_API_PORT || '5000',
+    CORS_ORIGIN: `http://localhost:${process.env.E2E_WEB_PORT || '5173'}`,
     TRUST_PROXY: 'true', // E2E tests send X-Forwarded-For so the FR-033 limiter never blocks unrelated logins
     NODE_ENV: 'test',
   };

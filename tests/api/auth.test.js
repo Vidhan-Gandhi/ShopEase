@@ -4,16 +4,20 @@ const WEAK = 'Password must be at least 8 characters and contain a letter and a 
 beforeEach(() => h.limiter.reset());
 
 describe('FR-001 sign up', () => {
-  test('TC-001 signup with valid data returns 201, token, role customer and no password', async () => {
+  test('TC-001 signup with valid data returns 201, unverified customer, no token and no password', async () => {
     const email = h.uniqueEmail('asha');
     const res = await h.post('/api/auth/signup', { body: { name: 'Asha Rao', email, password: 'Shop1234' } });
     expect(res.status).toBe(201);
-    expect(typeof res.body.token).toBe('string');
+    expect(res.body.token).toBeUndefined(); // changed by ONC-001: no session until the email is verified
+    expect(res.body.user.emailVerified).toBe(false);
     expect(res.body.user.role).toBe('customer');
     expect(res.body.user.email).toBe(email);
     expect(res.body.user.name).toBe('Asha Rao');
     expect(h.hasSecretKey(res.body)).toBe(false);
-    const profile = await h.get('/api/profile', { token: res.body.token });
+    await h.verifyAccount(email);
+    const lg = await h.post('/api/auth/login', { body: { email, password: 'Shop1234' } });
+    expect(lg.status).toBe(200);
+    const profile = await h.get('/api/profile', { token: lg.body.token });
     expect(profile.status).toBe(200);
     expect(h.hasSecretKey(profile.body)).toBe(false);
   });
@@ -49,7 +53,12 @@ describe('FR-001 sign up', () => {
     const res = await h.post('/api/auth/signup', { body: { name: 'Mallory', email: h.uniqueEmail(), password: 'Shop1234', role: 'admin' } });
     expect(res.status).toBe(201);
     expect(res.body.user.role).toBe('customer');
-    const adminCall = await h.get('/api/admin/dashboard', { token: res.body.token });
+    expect(res.body.token).toBeUndefined();
+    await h.verifyAccount(res.body.user.email);
+    const lg = await h.post('/api/auth/login', { body: { email: res.body.user.email, password: 'Shop1234' } });
+    expect(lg.status).toBe(200);
+    expect(lg.body.user.role).toBe('customer');
+    const adminCall = await h.get('/api/admin/dashboard', { token: lg.body.token });
     expect(adminCall.status).toBe(403);
   });
 
@@ -96,6 +105,7 @@ describe('FR-001 sign up', () => {
     const res = await h.post('/api/auth/signup', { body: { name: 'Mixed Case', email: `  ${base.toUpperCase()}  `, password: 'Shop1234' } });
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe(base.toLowerCase());
+    expect((await h.verifyAccount(base.toLowerCase())).status).toBe(200); // changed by ONC-001: verify before login
     const login = await h.post('/api/auth/login', { body: { email: base, password: 'Shop1234' } });
     expect(login.status).toBe(200);
   });
