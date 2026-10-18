@@ -14,7 +14,7 @@ app.disable('x-powered-by');
 app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', exposedHeaders: ['Retry-After'] })); // ONC-001: browser must read Retry-After on 429
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
 // General API limiter (generous; the strict login limiter lives in utils/loginRateLimiter.js)
