@@ -90,12 +90,12 @@ async function run() {
 
   const hashAdmin = await bcrypt.hash(creds.adminPassword, 10);
   const hashCustomer = await bcrypt.hash(creds.customerPassword, 10);
-  await User.create({ name: 'ShopEase Admin', email: creds.adminEmail, password: hashAdmin, role: 'admin' });
+  await User.create({ name: 'ShopEase Admin', email: creds.adminEmail, password: hashAdmin, role: 'admin', emailVerified: true });
   const asha = await User.create({
-    name: 'Asha Rao', email: creds.c1Email, password: hashCustomer, role: 'customer', phone: '9876543210', addresses: ADDRESSES.asha,
+    name: 'Asha Rao', email: creds.c1Email, password: hashCustomer, role: 'customer', emailVerified: true, phone: '9876543210', addresses: ADDRESSES.asha,
   });
   const ravi = await User.create({
-    name: 'Ravi Kumar', email: creds.c2Email, password: hashCustomer, role: 'customer', phone: '9123456780', addresses: ADDRESSES.ravi,
+    name: 'Ravi Kumar', email: creds.c2Email, password: hashCustomer, role: 'customer', emailVerified: true, phone: '9123456780', addresses: ADDRESSES.ravi,
   });
 
   const cats = await Category.insertMany(CATEGORIES.map((name) => ({ name })));

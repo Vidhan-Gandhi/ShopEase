@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Field, FormError } from '../components/ui'
+import ResendVerification from '../components/ResendVerification'
 import { useAuth } from '../context/AuthContext'
 import { retryText } from '../utils/format'
 import { useTitle } from '../utils/hooks'
@@ -23,12 +24,14 @@ export default function Login() {
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
 
   if (user && !busy) return <Navigate to={destinationAfterAuth(user, from)} replace />
 
   async function submit(e) {
     e.preventDefault()
     setFormError('')
+    setUnverifiedEmail('')
     const errs = { email: vEmail(email), password: password ? '' : 'Password is required' }
     setErrors(errs)
     if (hasErrors(errs)) return
@@ -40,7 +43,10 @@ export default function Login() {
       setBusy(false)
       const f = err.fields
       if (err.status === 400 && Object.keys(f).length) setErrors(f)
-      else if (err.status === 429) setFormError(err.message + retryText(err.retryAfter))
+      else if (err.status === 403 && err.data.code === 'EMAIL_NOT_VERIFIED') {
+        setFormError(err.message)
+        setUnverifiedEmail(err.data.email || email.trim())
+      } else if (err.status === 429) setFormError(err.message + retryText(err.retryAfter))
       else setFormError(err.message)
     }
   }
@@ -55,6 +61,7 @@ export default function Login() {
       )}
       <form data-testid="login-form" onSubmit={submit} noValidate className="card mt-4 space-y-4">
         <FormError message={formError} testid="login-error" />
+        {unverifiedEmail && <ResendVerification email={unverifiedEmail} prefix="login" />}
         <Field id="login-email" testid="login-email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} autoComplete="email" />
         <Field id="login-password" testid="login-password" type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} autoComplete="current-password" />
         <button type="submit" data-testid="login-submit" className="btn btn-primary w-full" disabled={busy}>

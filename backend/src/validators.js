@@ -32,6 +32,12 @@ const phone = z.string({ required_error: PHONE_MSG, invalid_type_error: PHONE_MS
 
 const signup = z.object({ name: text('Name', 2, 50), email, password: newPassword });
 
+const verifyEmail = z.object({
+  token: z.string({ required_error: 'Token is required', invalid_type_error: 'Token is required' }).trim().min(1, 'Token is required').max(200, 'Token is invalid'),
+});
+
+const resendVerification = z.object({ email });
+
 const login = z.object({
   email: z
     .string({ required_error: 'Email is required', invalid_type_error: 'Email must be text' })
@@ -220,6 +226,8 @@ const statusBody = z.object({
 module.exports = {
   isObjectId,
   signup,
+  verifyEmail,
+  resendVerification,
   login,
   profile,
   changePassword,

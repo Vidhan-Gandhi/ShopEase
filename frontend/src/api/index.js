@@ -5,6 +5,8 @@ const e = encodeURIComponent
 export const authApi = {
   signup: (body) => request('POST', '/auth/signup', { body, auth: false }),
   login: (body) => request('POST', '/auth/login', { body, auth: false }),
+  verifyEmail: (body) => request('POST', '/auth/verify-email', { body, auth: false }),
+  resendVerification: (body) => request('POST', '/auth/resend-verification', { body, auth: false }),
 }
 
 export const profileApi = {

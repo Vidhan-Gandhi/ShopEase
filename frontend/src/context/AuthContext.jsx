@@ -81,10 +81,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = useCallback(async (email, password) => completeAuth(await authApi.login({ email, password })), [completeAuth])
-  const signup = useCallback(
-    async (name, email, password) => completeAuth(await authApi.signup({ name, email, password })),
-    [completeAuth],
-  )
+  // ONC-001: signup no longer logs the user in; the account must be verified by email first.
+  const signup = useCallback(async (name, email, password) => authApi.signup({ name, email, password }), [])
   const logout = useCallback(() => {
     setToken(null)
     setUser(null)

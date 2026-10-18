@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Field, FormError } from '../components/ui'
+import { Field, FormError, FormSuccess } from '../components/ui'
+import ResendVerification from '../components/ResendVerification'
 import { useAuth } from '../context/AuthContext'
 import { useTitle } from '../utils/hooks'
 import { hasErrors, vEmail, vName, vNewPassword } from '../utils/validators'
@@ -16,6 +17,7 @@ export default function Signup() {
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [created, setCreated] = useState(null) // { email, message } after a successful sign-up
 
   if (user && !busy) return <Navigate to={destinationAfterAuth(user, from)} replace />
   const set = (k) => (e) => setValues((v) => ({ ...v, [k]: e.target.value }))
@@ -28,14 +30,31 @@ export default function Signup() {
     if (hasErrors(errs)) return
     setBusy(true)
     try {
-      const u = await signup(values.name.trim(), values.email.trim(), values.password)
-      navigate(destinationAfterAuth(u, from), { replace: true })
+      const r = await signup(values.name.trim(), values.email.trim(), values.password)
+      setCreated({ email: r.user.email, message: r.message })
+      setBusy(false)
     } catch (err) {
       setBusy(false)
       const f = err.fields
       if (Object.keys(f).length) setErrors(f)
       else setFormError(err.message)
     }
+  }
+
+  if (created) {
+    return (
+      <div className="mx-auto max-w-md">
+        <h1 data-testid="signup-verify-title">Check your email</h1>
+        <div data-testid="signup-verify-notice" className="card mt-4 space-y-4">
+          <FormSuccess message={created.message} testid="signup-verify-message" />
+          <p>
+            We sent a verification link to <strong data-testid="signup-verify-email">{created.email}</strong>. It is valid for 24 hours.
+          </p>
+          <ResendVerification email={created.email} prefix="signup" />
+          <Link to="/login" state={location.state} data-testid="signup-verify-login-link" className="link">Go to log in</Link>
+        </div>
+      </div>
+    )
   }
 
   return (

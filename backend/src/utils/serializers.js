@@ -15,6 +15,7 @@ function user(u) {
     email: u.email,
     phone: u.phone || '',
     role: u.role,
+    emailVerified: u.emailVerified !== false,
     createdAt: u.createdAt,
   };
 }

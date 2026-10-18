@@ -17,6 +17,7 @@ import ProductDetail from './pages/ProductDetail'
 import Products from './pages/Products'
 import Profile from './pages/Profile'
 import Signup from './pages/Signup'
+import VerifyEmail from './pages/VerifyEmail'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="cart" element={<Cart />} />
               <Route path="login" element={<Login />} />
               <Route path="signup" element={<Signup />} />
+              <Route path="verify-email" element={<VerifyEmail />} />
 
               <Route path="profile" element={<Guard><Profile /></Guard>} />
               <Route path="profile/password" element={<Guard><ChangePassword /></Guard>} />

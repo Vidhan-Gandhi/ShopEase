@@ -7,6 +7,7 @@ const catalog = require('../controllers/catalogController');
 const cart = require('../controllers/cartController');
 const orders = require('../controllers/orderController');
 const admin = require('../controllers/adminController');
+const testHelpers = require('../controllers/testController');
 
 const router = express.Router();
 
@@ -15,6 +16,12 @@ router.get('/health', (req, res) => res.json({ status: 'ok' }));
 // Auth
 router.post('/auth/signup', auth.signup);
 router.post('/auth/login', auth.login);
+router.post('/auth/verify-email', auth.verifyEmail);
+router.post('/auth/resend-verification', auth.resendVerification);
+
+// Test-only helpers (ONC-001): answer 404 unless NODE_ENV=test
+router.get('/test/emails', testHelpers.listEmails);
+router.delete('/test/emails', testHelpers.clearEmails);
 
 // Profile
 router.get('/profile', authenticate, profile.getProfile);

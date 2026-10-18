@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     role: { type: String, enum: ['customer', 'admin'], default: 'customer' },
     phone: { type: String, default: '' },
+    // ONC-001: defaults to true so existing/seeded accounts stay verified; signup sets false explicitly.
+    emailVerified: { type: Boolean, default: true },
+    emailVerifiedAt: { type: Date, default: null },
     addresses: [addressSchema],
   },
   { timestamps: true }
