@@ -6,7 +6,8 @@
   "scripts": {
     "test:api": "jest --runInBand --json --outputFile=reports/api.json",
     "test:e2e": "playwright test",
-    "collect": "node support/collect-results.js"
+    "collect": "node support/collect-results.js",
+    "screenshots": "playwright test -c playwright.screenshots.config.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
