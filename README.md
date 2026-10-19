@@ -80,6 +80,18 @@ Created by `npm run seed`. Do not use these anywhere outside local development.
 
 Seed data: 5 categories, 30 products, 6 orders in various statuses.
 
+## Screenshots
+
+| Home | Product list | Product page |
+|---|---|---|
+| ![Home](docs/screenshots/01-guest-home-desktop.png) | ![Product list](docs/screenshots/02-guest-products-desktop.png) | ![Product page](docs/screenshots/03-guest-product-detail-desktop.png) |
+
+| Cart | Checkout | Admin dashboard |
+|---|---|---|
+| ![Cart](docs/screenshots/04-customer-cart-desktop.png) | ![Checkout](docs/screenshots/05-customer-checkout-step2-review-desktop.png) | ![Admin dashboard](docs/screenshots/07-admin-dashboard-desktop.png) |
+
+Full gallery with mobile views and requirement coverage: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
+
 ## Tests
 
 ```bash
